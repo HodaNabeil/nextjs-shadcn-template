@@ -11,6 +11,12 @@ export async function createPaymentIntent(): Promise<PaymentIntent> {
     cache: "no-store",
   });
 
+  const contentType = response.headers.get("content-type") ?? "";
+
+  if (!contentType.includes("application/json")) {
+    throw new Error("Failed to create payment intent");
+  }
+
   const data: unknown = await response.json();
 
   if (!response.ok) {

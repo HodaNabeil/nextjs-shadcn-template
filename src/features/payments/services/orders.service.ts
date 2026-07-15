@@ -9,10 +9,23 @@ import {
 } from "@/features/cart/services/cart.service";
 import { prisma } from "@/lib/db/prisma";
 
-type OrderWithItems = Prisma.OrderGetPayload<{ include: { items: true } }>;
+type OrderWithDetails = Prisma.OrderGetPayload<{
+  include: {
+    user: true;
+    items: { include: { course: true } };
+  };
+}>;
+
+async function sendOrderConfirmationEmails(order: OrderWithDetails) {
+  const { sendOrderConfirmationEmails: sendEmails } = await import(
+    "./order-email.service"
+  );
+
+  await sendEmails(order);
+}
 
 async function finalizeOrder(
-  order: OrderWithItems,
+  order: OrderWithDetails,
   paymentId: string,
   paymentMethod: string,
 ) {
@@ -20,7 +33,7 @@ async function finalizeOrder(
     return order;
   }
 
-  return prisma.$transaction(async (tx) => {
+  const updatedOrder = await prisma.$transaction(async (tx) => {
     const updatedOrder = await tx.order.update({
       where: { id: order.id },
       data: {
@@ -49,6 +62,10 @@ async function finalizeOrder(
 
     return updatedOrder;
   });
+
+  await sendOrderConfirmationEmails(order);
+
+  return updatedOrder;
 }
 
 export async function createOrderFromCart(userId: string) {
@@ -87,7 +104,10 @@ export async function completeOrder(
 ) {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    include: { items: true },
+    include: {
+      user: true,
+      items: { include: { course: true } },
+    },
   });
 
   if (!order) {
@@ -103,7 +123,10 @@ export async function completeOrderByPaymentId(
 ) {
   const order = await prisma.order.findUnique({
     where: { paymentId },
-    include: { items: true },
+    include: {
+      user: true,
+      items: { include: { course: true } },
+    },
   });
 
   if (!order) {

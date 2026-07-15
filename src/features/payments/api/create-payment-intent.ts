@@ -53,6 +53,11 @@ export async function POST() {
       clientSecret: paymentIntent.client_secret,
       amount: order.amount,
       email: user.email,
+      items: order.items.map(({ course }) => ({
+        id: course.id,
+        title: course.title,
+        price: course.price,
+      })),
     });
   } catch (error: unknown) {
     if (error instanceof Error) {

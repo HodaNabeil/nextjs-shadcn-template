@@ -1,5 +1,8 @@
 export { default as CheckoutForm } from "./components/checkout-form";
 export { CheckoutView } from "./components/checkout-view";
+export { CheckoutOrderItems } from "./components/checkout-order-items";
+export { CheckoutOrderSummary } from "./components/checkout-order-summary";
+export { CheckoutPaymentMethodTab } from "./components/checkout-payment-method-tab";
 export { usePaymentIntent } from "./hooks/use-payment-intent";
 export { paymentIntentKeys } from "./keys/payment-intent.keys";
 export {

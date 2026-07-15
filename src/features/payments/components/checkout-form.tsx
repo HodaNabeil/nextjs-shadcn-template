@@ -6,15 +6,36 @@ import {
   useElements,
   PaymentElement,
 } from "@stripe/react-stripe-js";
+import { AlertCircle, Check, Lock } from "lucide-react";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { formatPrice } from "@/features/cart/utils/cart.client";
+import { CheckoutOrderItems } from "@/features/payments/components/checkout-order-items";
+import { CheckoutPaymentMethodTab } from "@/features/payments/components/checkout-payment-method-tab";
+import type { PaymentIntent } from "@/features/payments/types/payment-intent";
 
 type CheckoutFormProps = {
   email: string;
+  amount: number;
+  items: PaymentIntent["items"];
 };
 
-export default function CheckoutForm({ email }: CheckoutFormProps) {
+export default function CheckoutForm({
+  email,
+  amount,
+  items,
+}: CheckoutFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
@@ -49,48 +70,73 @@ export default function CheckoutForm({ email }: CheckoutFormProps) {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="max-w-md mx-auto p-6 bg-white rounded-xl shadow-md border border-gray-100"
-    >
-      <div className="mb-4 space-y-2">
-        <Label htmlFor="checkout-email">البريد الإلكتروني</Label>
-        <Input
-          id="checkout-email"
-          type="email"
-          name="email"
-          autoComplete="email"
-          readOnly
-          value={email}
-          dir="ltr"
-          className="bg-muted cursor-not-allowed"
-        />
-      </div>
+    <Card>
+      <CardHeader className="space-y-4">
+        <CardTitle className="text-lg font-semibold">معلومات الدفع</CardTitle>
+        <CheckoutPaymentMethodTab />
+      </CardHeader>
 
-      <div className="mb-4">
-        <PaymentElement
-          options={{
-            fields: {
-              billingDetails: {
-                email: "never",
-              },
-            },
-          }}
-        />
-      </div>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <CheckoutOrderItems items={items} />
 
-      <button
-        disabled={!stripe || loading}
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium p-2.5 rounded-lg transition disabled:opacity-50"
-      >
-        {loading ? "جاري معالجة الدفع..." : "ادفع الآن"}
-      </button>
+          <Separator />
 
-      {errorMessage && (
-        <div className="mt-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm border border-red-100">
-          {errorMessage}
-        </div>
-      )}
-    </form>
+          <div className="space-y-2">
+            <Label htmlFor="checkout-email">البريد الإلكتروني</Label>
+            <Input
+              id="checkout-email"
+              type="email"
+              name="email"
+              autoComplete="email"
+              readOnly
+              value={email}
+              dir="ltr"
+              className="cursor-not-allowed bg-muted"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>بيانات البطاقة</Label>
+            <PaymentElement
+              options={{
+                fields: {
+                  billingDetails: {
+                    email: "never",
+                  },
+                },
+              }}
+            />
+          </div>
+
+          <Button
+            type="submit"
+            disabled={!stripe || loading}
+            size="lg"
+            className="h-11 w-full text-base"
+          >
+            <Lock className="size-4" />
+            {loading ? "جاري معالجة الدفع..." : `ادفع $${formatPrice(amount)}`}
+          </Button>
+
+          {errorMessage ? (
+            <Alert variant="destructive">
+              <AlertCircle />
+              <AlertDescription>{errorMessage}</AlertDescription>
+            </Alert>
+          ) : null}
+
+          <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+            <Check className="size-3.5 text-green-600" />
+            <span>بياناتك مشفرة</span>
+          </div>
+
+          <CardDescription className="text-center">
+            Powered by{" "}
+            <span className="font-semibold text-foreground">Stripe</span>
+          </CardDescription>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

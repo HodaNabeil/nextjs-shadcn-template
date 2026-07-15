@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import {
   completeOrder,
+  completeOrderByPaymentId,
   failOrder,
 } from "@/features/payments/services/orders.service";
 import { stripe } from "@/lib/stripe";
@@ -42,6 +43,8 @@ export async function POST(request: Request) {
 
     if (orderId) {
       await completeOrder(orderId, paymentIntent.id);
+    } else {
+      await completeOrderByPaymentId(paymentIntent.id);
     }
 
     console.log(

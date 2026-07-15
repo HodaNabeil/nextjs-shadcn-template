@@ -8,6 +8,7 @@ export { paymentIntentKeys } from "./keys/payment-intent.keys";
 export {
   createOrderFromCart,
   completeOrder,
+  completeOrderByPaymentId,
   failOrder,
 } from "./services/orders.service";
 export {

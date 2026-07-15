@@ -1,14 +1,55 @@
 import "server-only";
 
-import { OrderStatus } from "@prisma/client";
+import { OrderStatus, type Prisma } from "@prisma/client";
 
 import {
-  clearCartForUser,
   getCartCoursesForUser,
   getCartTotal,
   toStripeAmount,
 } from "@/features/cart/services/cart.service";
 import { prisma } from "@/lib/db/prisma";
+
+type OrderWithItems = Prisma.OrderGetPayload<{ include: { items: true } }>;
+
+async function finalizeOrder(
+  order: OrderWithItems,
+  paymentId: string,
+  paymentMethod: string,
+) {
+  if (order.status === OrderStatus.COMPLETED) {
+    return order;
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const updatedOrder = await tx.order.update({
+      where: { id: order.id },
+      data: {
+        status: OrderStatus.COMPLETED,
+        paymentId,
+        paymentMethod,
+      },
+    });
+
+    await tx.enrollment.createMany({
+      data: order.items.map((item) => ({
+        userId: order.userId,
+        courseId: item.courseId,
+      })),
+      skipDuplicates: true,
+    });
+
+    for (const item of order.items) {
+      await tx.cartItem.deleteMany({
+        where: {
+          userId: order.userId,
+          courseId: item.courseId,
+        },
+      });
+    }
+
+    return updatedOrder;
+  });
+}
 
 export async function createOrderFromCart(userId: string) {
   const cartCourses = await getCartCoursesForUser(userId);
@@ -39,7 +80,11 @@ export async function createOrderFromCart(userId: string) {
   });
 }
 
-export async function completeOrder(orderId: string, paymentId: string) {
+export async function completeOrder(
+  orderId: string,
+  paymentId: string,
+  paymentMethod = "STRIPE",
+) {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     include: { items: true },
@@ -49,34 +94,23 @@ export async function completeOrder(orderId: string, paymentId: string) {
     return null;
   }
 
-  if (order.status === OrderStatus.COMPLETED) {
-    return order;
-  }
+  return finalizeOrder(order, paymentId, paymentMethod);
+}
 
-  await prisma.$transaction([
-    prisma.order.update({
-      where: { id: orderId },
-      data: {
-        status: OrderStatus.COMPLETED,
-        paymentId,
-      },
-    }),
-    prisma.enrollment.createMany({
-      data: order.items.map((item) => ({
-        userId: order.userId,
-        courseId: item.courseId,
-      })),
-      skipDuplicates: true,
-    }),
-    prisma.cartItem.deleteMany({
-      where: { userId: order.userId },
-    }),
-  ]);
-
-  return prisma.order.findUnique({
-    where: { id: orderId },
+export async function completeOrderByPaymentId(
+  paymentId: string,
+  paymentMethod = "STRIPE",
+) {
+  const order = await prisma.order.findUnique({
+    where: { paymentId },
     include: { items: true },
   });
+
+  if (!order) {
+    return null;
+  }
+
+  return finalizeOrder(order, paymentId, paymentMethod);
 }
 
 export async function failOrder(orderId: string) {

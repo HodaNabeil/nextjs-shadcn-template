@@ -24,7 +24,7 @@ export function CheckoutOrderItems({ items }: CheckoutOrderItemsProps) {
             <div className="flex items-start gap-4">
               <div
                 aria-hidden
-                className="size-16 shrink-0 rounded-md bg-gradient-to-br from-indigo-100 to-violet-200"
+                className="size-16 shrink-0 rounded-md bg-linear-to-br from-indigo-100 to-violet-200"
               />
 
               <div className="min-w-0 flex-1">

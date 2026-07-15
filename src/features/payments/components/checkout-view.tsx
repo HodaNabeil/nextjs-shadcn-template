@@ -5,10 +5,7 @@ import { Elements } from "@stripe/react-stripe-js";
 import { Cairo } from "next/font/google";
 import { Lock } from "lucide-react";
 
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import CheckoutForm from "@/features/payments/components/checkout-form";
 import { CheckoutOrderSummary } from "@/features/payments/components/checkout-order-summary";
 import { usePaymentIntent } from "@/features/payments/hooks/use-payment-intent";
@@ -27,7 +24,7 @@ export function CheckoutView() {
 
   return (
     <div
-      className={`${cairo.variable} min-h-full bg-background font-[family-name:var(--font-cairo)] text-foreground`}
+      className={`${cairo.variable} min-h-full bg-background font-(family-name:--font-cairo) text-foreground`}
     >
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8" dir="rtl">
         <header className="mb-10">
